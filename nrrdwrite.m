@@ -13,7 +13,8 @@ addRequired(p, 'data', @(x) isnumeric(x) || islogical(x));
 addRequired(p, 'meta', @isstruct);
 addParameter(p, 'SuppressWarnings', true, @islogical);
 addParameter(p, 'FlipAxes', true, @islogical);
-addParameter(p, 'AsciiDelimeter', '\n', @ischar); 
+addParameter(p, 'AsciiDelimeter', '\n', @ischar);
+addParameter(p, 'UseStringVectorQuotationMarks', false, @islogical);
 
 parse(p, varargin{:});
 
@@ -137,7 +138,7 @@ for kk = 1:length(fieldNames)
     % Get field name and the field value (converted to string)
     field = fieldNames{kk};
     value = getFieldValueStr(field, meta.(field), ...
-        p.Results.SuppressWarnings);
+        p.Results.SuppressWarnings, p.Results.UseStringVectorQuotationMarks);
 
     % If the field name is present in the fieldMap, then use the mapped
     % value. This will useful for replacing spaces when writing the field
@@ -213,7 +214,8 @@ function [str] = getVectorStr(value, formatStr, delimeter)
 end
 
 
-function str = getFieldValueStr(field, value, suppressWarnings)
+function str = getFieldValueStr(field, value, SuppressWarnings, ...
+                            UseStringVectorQuotationMarks)
 
 switch (field)
     % Handle 32-bit ints
@@ -238,8 +240,25 @@ switch (field)
         str = getVectorStr(value, '%.16g', ' ');
 
     % Handle array of strings
-    case {'kinds', 'labels', 'units', 'spaceunits', 'centerings'}
+    case {'kinds', 'centerings'}
         str = strjoin(value, ' ');
+
+    % Handle array of strings (has quotation marks around them in official
+    % standard)
+    case {'labels', 'units', 'spaceunits'}
+        % In the official NRRD standard, there are a few fields that have
+        % quotation marks around each string that is present. When using
+        % NRRD's tool to create files, it follows the standard and includes
+        % the quotation marks but I have seen some implementations (such as
+        % pynrrd, Slicer) that does not use quotation marks.
+        % UseStringVectorQuotationMarks is a parameter that allows turning
+        % this on/off. By default, it is off because I don't think the
+        % quotations are necessary most of the time.
+        if UseStringVectorQuotationMarks
+            str = ['"' strjoin(value, '" "') '"'];
+        else
+            str = strjoin(value, ' ');
+        end
 
     % Handle matrices of double datatype
     case {'spacedirections', 'spaceorigin'}
@@ -272,7 +291,7 @@ switch (field)
         str(end) = [];
 
     otherwise
-        if ~suppressWarnings
+        if ~SuppressWarnings
             warning(['Unknown field ' field]);
         end
         str = value;
