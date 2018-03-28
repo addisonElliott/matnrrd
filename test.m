@@ -163,12 +163,11 @@
 
 
 
-[data, metadata] = nrrdread('data/test1d_ascii.nrrd');
-nrrdwrite('test.nrrd', data, metadata);
-
+% [data, metadata] = nrrdread('data/test1d_ascii.nrrd');
 % [data, metadata] = nrrdread('data/test2d_ascii.nrrd');
-% [data, metadata] = nrrdread('data/test3d_ascii.nrrd');
+[data, metadata] = nrrdread('data/test3d_ascii.nrrd');
 
+nrrdwrite('test.nrrd', data, metadata);
 
 
 % measurement frame test for nrrdread maybe? Well, I don't know if that matters

@@ -51,7 +51,7 @@ if isvector(data)
     meta.sizes = length(data);
 else
     meta.dimension = ndims(data);
-    meta.sizes = size(data);
+    meta.sizes = fliplr(size(data));
 end
 
 % Open file for writing
@@ -311,23 +311,27 @@ switch (meta.encoding)
         data = fread(fidTmp, inf, [meta.type '=>' meta.type]);
 
     case {'txt', 'text', 'ascii'}
+        % Get the formatSpec string based on the data type
+        % Note: Double precision can store at maximum 16 decimal places
+        % Single precision can store at maximum 7 decimal places.
         switch (class(data))
-            case {'double'}
-                formatSpec = '%.16g';
-
-            case {'single'}
-                formatSpec = '%.7g';
-
-            otherwise
-                formatSpec = '%i';
+            case {'double'}, formatSpec = '%.16g';
+            case {'single'}, formatSpec = '%.7g';
+            otherwise, formatSpec = '%i';
         end
 
+        % Print the data matrix to the file using fprintf
+        % For the special case of a 2D matrix, the ASCII text is written in
+        % rows and columns to look nice.
         if meta.dimension == 2
-            for r = 1:size(data, 1)
-                str = getVectorStr(data(:, r), formatSpec, ' ');
+            % Go row by row (i.e. y-value) and print the row. Follow the
+            % row printing with a newline
+            for y = 1:size(data, 2)
+                str = getVectorStr(data(:, y), formatSpec, ' ');
                 fprintf(fid, [str '\n']);
             end
         else
+            % Print the data matrix using the AsciiDelimeter parameter
             formatSpec = [formatSpec AsciiDelimeter];
             fprintf(fid, formatSpec, data);
         end
