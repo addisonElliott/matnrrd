@@ -1,0 +1,12 @@
+NRRD0003
+# Complete NRRD file format specification at:
+# http://teem.sourceforge.net/nrrd/format.html
+type: unsigned char
+dimension: 1
+sizes: 27
+spacings: 1.0458000000000001
+kinds: domain
+encoding: raw
+
+	
+

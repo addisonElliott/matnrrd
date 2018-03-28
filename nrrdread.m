@@ -27,7 +27,7 @@ function [data, meta] = nrrdread(varargin)
 %
 %   Here is a list of supported fields and their corresponding MATLAB 
 %   datatype they are converted to:
-%       * dimension - int
+%       * dimension - int   [REQUIRED]
 %       * lineskip - int
 %       * byteskip - int
 %       * space dimension - int
@@ -35,14 +35,14 @@ function [data, meta] = nrrdread(varargin)
 %       * max - double
 %       * oldmin - double
 %       * oldmax - double
-%       * type - string
+%       * type - string [REQUIRED]
 %       * endian - string
-%       * encoding - string
+%       * encoding - string [REQUIRED]
 %       * content - string
 %       * sampleunits - string
 %       * datafile - string
 %       * space - string
-%       * sizes - 1xN matrix of ints
+%       * sizes - 1xN matrix of ints    [REQUIRED]
 %       * spacings - 1xN matrix of doubles
 %       * thicknesses - 1xN matrix of doubles
 %       * axismins - 1xN matrix of doubles
@@ -56,8 +56,12 @@ function [data, meta] = nrrdread(varargin)
 %       * spaceorigin - MxN matrix of doubles
 %       * measurementframe - MxN matrix of ints
 %
+%   Most of the fields listed in the table above are optional with the
+%   exception of four. The NRRD file must contain the type, dimension,
+%   sizes and encoding fields.
+%
 %   Note: For spacedirections, NRRD allows specifying none for a
-%   particular dimension to signify it does not correspond in space.
+%   particular dimension to indicate it is not a spatial domain.
 %   NRRDREAD will make the first row of the matrix all NaN's to signal
 %   that it is none for the dimension. For example:
 %       space directions: none (1,0,0) (0,1,0) (0,0,1)
@@ -96,11 +100,13 @@ function [data, meta] = nrrdread(varargin)
 %
 %   MORE INFORMATION
 %
-%   Help everyone out by reporting bugs or contributing code at:
+%   Help out by reporting bugs or contributing code at:
 %       https://github.com/addisonElliott/matnrrd
 %
 %   See the format specification online:
 %       http://teem.sourceforge.net/nrrd/format.html
+%
+%    See also nrrdwrite, imread, xlsread.
 
 % Input parser for parsing input commands
 p = inputParser;

@@ -1,9 +1,120 @@
 function nrrdwrite(varargin)
-% Write data in nrrd format
-% Arguments
-% - filename: output file name
-% - X: array data to be written
-% - meta: struct from nrrdread
+%NRRDWRITE  Write image volume and metadata to NRRD file.
+%   NRRDWRITE(FILENAME, data, meta, ...) writes the image volume DATA and 
+%   associated metadata META to a NRRD file specified by FILENAME. 
+%
+%
+%   Example:
+%
+%       [data, metadata] = nrrdread('data/test1d_ascii.nrrd');
+%       metadata.encoding = 'raw';
+%       nrrdwrite('test.nrrd', data, metadata);
+%
+%
+%   METADATA
+%
+%   META should be a structure with the field names as the key and with a
+%   value. One caveat of using a structure is that the keys cannot have 
+%   spaces in them. To resolve this issue, the field names should have
+%   spaces removed from them before being added to the metadata structure.
+%   In addition, a fieldMap key can be added to the structure and should
+%   contain a Nx2 cell array. The first column indicates the key name in
+%   the structure and the second column contains the actual field name to 
+%   be written in the NRRD file. 
+%
+%   NRRDWRITE automatically handles converting from the appropiate datatype
+%   of supported fields to a string for the NRRD file. Following is a list 
+%   of supported fields and their corresponding MATLAB datatype they should 
+%   be:
+%       * dimension - int
+%       * lineskip - int
+%       * byteskip - int
+%       * space dimension - int
+%       * min - double
+%       * max - double
+%       * oldmin - double
+%       * oldmax - double
+%       * type - string
+%       * endian - string [default: machine endianness]
+%       * encoding - string [default: gzip]
+%       * content - string
+%       * sampleunits - string
+%       * datafile - string
+%       * space - string
+%       * sizes - 1xN matrix of ints
+%       * spacings - 1xN matrix of doubles
+%       * thicknesses - 1xN matrix of doubles
+%       * axismins - 1xN matrix of doubles
+%       * axismaxs - 1xN matrix of doubles
+%       * kinds - Nx1 cell array of strings
+%       * labels - Nx1 cell array of strings
+%       * units - Nx1 cell array of strings
+%       * spaceunits - Nx1 cell array of strings
+%       * centerings - Nx1 cell array of strings
+%       * spacedirections - MxN matrix of doubles
+%       * spaceorigin - MxN matrix of doubles
+%       * measurementframe - MxN matrix of ints
+%
+%   If encoding is not set in META, then it will default to 'gzip'. If
+%   endian is not set in META, then it will default to the machine's
+%   endianness.
+%
+%   Note: For spacedirections, NRRD allows specifying none for a particular
+%   dimension to indicate it is not a spatial domain.
+%   NRRDWRITE will write out none for a particular dimension if that 
+%   corresponding row of the matrix is all NaNs. For example: 
+%       spacedirections = [NaN NaN NaN; 1 0 0; 0 1 0; 0 0 1]
+%   will turn into:
+%       space directions: none (1,0,0) (0,1,0) (0,0,1)
+%
+%   For unsupported fields, a warning will be displayed. Any unsupported
+%   field's values will be directly written to the NRRD file and thus
+%   should be a string.
+%
+%
+%   Special syntaxes: 
+%   
+%   [...] = NRRDWRITE(..., 'SupressWarnings', true/false) suppresses any
+%   warnings that occur while writing if set to true. Otherwise, if false,
+%   warnings will be printed to console. The typical warnings are for
+%   field/value in the NRRD metadata that are unknown. Set to true by
+%   default.
+%
+%   [...] = NRRDWRITE(..., 'FlipAxes', true/false) determines whether all of
+%   the axes will be flipped upon writing the file. The NRRD specification
+%   states that the data array is stored in memory with what is coined as
+%   C-order style. However, MATLAB stores arrays in Fortran-order style.
+%   The main difference between these two styles is that C-order has the
+%   first dimension being the slowest changing dimension while the last one
+%   is the quickest changing. Fortran-order is exactly the opposite. To
+%   accomodate for this, the axes are flipped to give the same array. By
+%   default, this option is set to true.
+%
+%   [...] = NRRDWRITE(..., 'AsciiDelimeter', char) sets the character to 
+%   use when delineating values. This option is only valid when the 
+%   encoding is set to ascii. By default, this is set to be a newline (\n).
+%
+%   [...] = NRRDWRITE(..., 'UseStringVectorQuotationMarks', true/false)
+%   determines whether quotation marks will be placed around string
+%   vectors. This only applies to the fields: labels, spaceunits and units.
+%   If set to true, then quotation marks will be used, otherwise, if false,
+%   none will be used. By default, this is set to true. For example:
+%       spaceunits = {'mm' 'mm' 'mm'}
+%   will turn into the following if parameter is set to true:
+%       space units: "mm" "mm" "mm"
+%   otherwise, if set to false:
+%       space units: mm mm mm
+%
+%
+%   MORE INFORMATION
+%
+%   Help everyone out by reporting bugs or contributing code at:
+%       https://github.com/addisonElliott/matnrrd
+%
+%   See the format specification online:
+%       http://teem.sourceforge.net/nrrd/format.html
+%
+%    See also nrrdread, imwrite, xlswrite.
 
 % Input parser for parsing input commands
 p = inputParser;
