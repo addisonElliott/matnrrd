@@ -126,8 +126,6 @@ assert(all(metadata.spaceorigin == [100.1 200.3 -500]), 'Space origin not correc
 % measurement frame test for nrrdread maybe? Well, I don't know if that matters
 % as much, the real question is when we go to write it out
 
-% test endianness
-
 % TODO Now I want to create some NRRD files with BZIP2 encoding, GZIP
 % encoding, GZ2 encoding, RAW encoding, and PNG encoding
 
