@@ -36,6 +36,8 @@ p = inputParser;
 addRequired(p, 'filename', @isstr);
 addParameter(p, 'SuppressWarnings', true, @islogical);
 addParameter(p, 'FlipAxes', true, @islogical);
+addParameter(p, 'Endian', [], @(x) any(strcmp({'little', 'l', 'L', 'big', ...
+                                    'b', 'B'}, x)));
 
 parse(p, varargin{:});
 
@@ -111,14 +113,25 @@ assert(isfield(meta, 'sizes') && ...
        isfield(meta, 'type'), ...
        'Missing required metadata fields.')
 
-% Set default endianness of computer if not defined in file
+% Set the default endianness if not defined in file
+% If an endianness was specified as a parameter to this function, then use
+% that specified endianness. Otherwise, use endianness of computer's
+% architecture
 if ~isfield(meta, 'endian')
-    [~, ~, endian] = computer();
+    if ~isempty(p.Results.Endian)
+        if any(strcmp({'little', 'l', 'L'}, p.Results.Endian))
+            meta.endian = 'little';
+        else
+            meta.endian = 'big';
+        end
+    else
+        [~, ~, endian] = computer();
 
-    if endian == 'L' 
-        meta.endian = 'little';
-    else 
-        meta.endian = 'big';
+        if endian == 'L' 
+            meta.endian = 'little';
+        else 
+            meta.endian = 'big';
+        end
     end
 end
 
@@ -338,9 +351,11 @@ function data = adjustEndian(data, meta)
 
 [~, ~, endian] = computer();
 
-needToSwap = (isequal(endian, 'B') && isequal(lower(meta.endian), 'little')) || ...
-             (isequal(endian, 'L') && isequal(lower(meta.endian), 'big'));
-         
+% Note: Do not swap endianness for ASCII encoding!
+needToSwap = ~strcmp(meta.encoding, 'ascii') && ...
+             ((isequal(endian, 'B') && isequal(meta.endian, 'little')) || ...
+             (isequal(endian, 'L') && isequal(meta.endian, 'big')));
+
 if (needToSwap)
     data = swapbytes(data);
 end
