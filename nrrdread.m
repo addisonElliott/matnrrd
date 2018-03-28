@@ -43,7 +43,7 @@ parse(p, varargin{:});
 
 % Open file
 [fid, msg] = fopen(p.Results.filename, 'rb');
-assert(fid > 0, ['Could not open file: ' msg]);
+assert(fid > 3, ['Could not open file: ' msg]);
 cleaner = onCleanup(@() fclose(fid));
 
 % Handle Magic line

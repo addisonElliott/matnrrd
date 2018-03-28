@@ -169,12 +169,20 @@
 
 % [data, metadata] = nrrdread('data/test1d_raw.nrrd');
 % [data, metadata] = nrrdread('data/test2d_raw.nrrd');
-[data, metadata] = nrrdread('data/test3d_raw.nrrd');
+% [data, metadata] = nrrdread('data/test3d_raw.nrrd');
 % data = double(data) + randn(3, 3, 3);
 % metadata.endian = 'big';
 
+
+% [data, metadata] = nrrdread('data/test1d_gzip.nrrd');
+% [data, metadata] = nrrdread('data/test2d_gzip.nrrd');
+[data, metadata] = nrrdread('data/test3d_gzip.nrrd');
+
 nrrdwrite('test.nrrd', data, metadata);
 
+[data2, metadata2] = nrrdread('test.nrrd');
+
+assert(all(all(all(data == data2))), 'GZIP Matrices are different');
 
 % measurement frame test for nrrdread maybe? Well, I don't know if that matters
 % as much, the real question is when we go to write it out

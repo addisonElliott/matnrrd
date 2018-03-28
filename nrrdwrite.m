@@ -309,27 +309,31 @@ switch (meta.encoding)
         fwrite(fid, data, class(data), 0, meta.endian(1));
 
     case {'gzip', 'gz'}
-        % Create and open temporary file to store the GZIP file to be
-        % decompressed
-        tmpBase = tempname();
-        tmpFile = [tmpBase '.gz'];
-        fidTmp = fopen(tmpFile, 'wb');
-        assert(fidTmp > 3, 'Could not open temporary file for GZIP decompression')
+        % Create an open a temporary file to store the data in to be
+        % compressed
+        tmpFilename = tempname();
+        tmpFid = fopen(tmpFilename, 'wb');
+        assert(tmpFid > 3, 'Could not open temporary file for GZIP compression');
 
-        % Read data from file and place into temporary file
-        tmp = fread(fidIn, inf, 'uint8=>uint8');
-        fwrite(fidTmp, tmp, 'uint8');
-        fclose(fidTmp);
+        % Write the data to the file and then close it (do not use
+        % onCleanup because we NEED the file closed now to be able to zip
+        % it)
+        fwrite(tmpFid, data, class(data), 0, meta.endian(1));
+        fclose(tmpFid);
 
-        % Unzip the temporary file now
-        gunzip(tmpFile)
+        % Compress the data
+        gzip(tmpFilename);
 
-        % Open the unzipped file
-        fidTmp = fopen(tmpBase, 'rb');
-        cleaner = onCleanup(@() fclose(fidTmp));
+        % Next read the compressed file and copy data to NRRD file
+        tmpFid = fopen([tmpFilename '.gz'], 'rb');
+        assert(tmpFid > 3, 'Could not read GZIP compressed file');
+        cleaner = onCleanup(@() fclose(tmpFid));
 
-        % Read the data from the unzipped file
-        data = fread(fidTmp, inf, [meta.type '=>' meta.type]);
+        % Read the data from the zipped file
+        compressedData = fread(tmpFid, inf, 'uint8=>uint8');
+
+        % Write data to NRRD file
+        fwrite(fid, compressedData, 'uint8');
 
     case {'txt', 'text', 'ascii'}
         % Get the formatSpec string based on the data type
