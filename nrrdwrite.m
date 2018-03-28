@@ -43,8 +43,16 @@ end
 % These fields could be out of date or incorrect, so it is best just to
 % update these fields
 meta.type = getNRRDDatatype(class(data));
-meta.dimension = ndims(data);
-meta.sizes = size(data);
+
+% Handle special case of a vector because ndims returns 2 for a vector even
+% though one dimension is length 1
+if isvector(data)
+    meta.dimension = 1;
+    meta.sizes = length(data);
+else
+    meta.dimension = ndims(data);
+    meta.sizes = size(data);
+end
 
 % Open file for writing
 fid = fopen(filename, 'wb');
@@ -148,7 +156,19 @@ end
 % Append a blank space to the file to indicate data is coming next
 fprintf(fid, '\n');
 
-% writeData(fid, meta, data, p.Results.AsciiDelimeter);
+% NRRD states that the dimensions specified are set in terms of the fastest
+% dimension to the slowest changing dimension
+% This is coined traditional C-ordering in memory but MATLAB uses Fortran
+% ordering which is the opposite.
+% Thus, if FlipAxes is set, the axes are flipped to correct this
+if p.Results.FlipAxes
+    % Get order of dimensions by reversing them
+    % Permute data
+    order = fliplr(1:ndims(data));
+    data = permute(data, order);
+end
+
+writeData(fid, meta, data, p.Results.AsciiDelimeter);
 
 % Write binary data in raw format
 % dims = sscanf(meta.sizes, '%d');
@@ -291,14 +311,26 @@ switch (meta.encoding)
         data = fread(fidTmp, inf, [meta.type '=>' meta.type]);
 
     case {'txt', 'text', 'ascii'}
-        if any(strcmp({'double' 'single'}, class(5.0)))
-            formatSpec = '%f';
-        else
-            formatSpec = '%i';
+        switch (class(data))
+            case {'double'}
+                formatSpec = '%.16g';
+
+            case {'single'}
+                formatSpec = '%.7g';
+
+            otherwise
+                formatSpec = '%i';
         end
 
-        formatSpec = [formatSpec AsciiDelimeter];
-        fprintf(fid, formatSpec, data);
+        if meta.dimension == 2
+            for r = 1:size(data, 1)
+                str = getVectorStr(data(:, r), formatSpec, ' ');
+                fprintf(fid, [str '\n']);
+            end
+        else
+            formatSpec = [formatSpec AsciiDelimeter];
+            fprintf(fid, formatSpec, data);
+        end
 
     otherwise
         assert(false, 'Unsupported encoding')

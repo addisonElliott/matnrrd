@@ -162,6 +162,15 @@
 
 
 
+
+[data, metadata] = nrrdread('data/test1d_ascii.nrrd');
+nrrdwrite('test.nrrd', data, metadata);
+
+% [data, metadata] = nrrdread('data/test2d_ascii.nrrd');
+% [data, metadata] = nrrdread('data/test3d_ascii.nrrd');
+
+
+
 % measurement frame test for nrrdread maybe? Well, I don't know if that matters
 % as much, the real question is when we go to write it out
 
@@ -173,12 +182,12 @@
 % filename = 'data/303PREDIASTOLE.seg.nrrd';
 % filename = 'data/an-hist.nrrd';
 % filename = 'data/EndDiastole.nrrd';
-filename = 'data/SCAT.nrrd';
+% filename = 'data/SCAT.nrrd';
 % filename = 'unustuff/test.nrrd';
 
-[data, metadata] = nrrdread(filename);
-metadata.spacings = [1.40625 1.45 2.51231321231231];
-nrrdwrite('test.nrrd', data, metadata);
+% [data, metadata] = nrrdread(filename);
+% metadata.spacings = [1.40625 1.45 2.51231321231231];
+% nrrdwrite('test.nrrd', data, metadata);
 
 % data = permute(data, [2 1 3]);
 % data = permute(data, [2 3 4 1]);
