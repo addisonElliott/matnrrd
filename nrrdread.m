@@ -1,34 +1,106 @@
 function [data, meta] = nrrdread(varargin)
 %NRRDREAD  Read NRRD file and metadata.
-%   [X, META] = NRRDREAD(FILENAME) reads the image volume and associated
-%   metadata from the NRRD-format file specified by FILENAME.
+%   [X, META] = NRRDREAD(FILENAME, ...) reads the image volume and 
+%   associated metadata from the NRRD-format file specified by FILENAME.
 %
-%   Example:
 %
-%       [data, metadata] = nrrdread('test.nrrd');
+%   Examples:
+%
+%       [data, metadata] = nrrdread('data/test1d_ascii.nrrd');
+%       [data, metadata] = nrrdread('data/test3d_bigendian_raw_noendianfield.nrrd', 'Endian', 'big');
+%
+%
+%   METADATA
+%
+%   One of the main advantages of this function is that the metadata is
+%   parsed from strings and turned into a sensible datatype. This is
+%   performed for the fields specified in the NRRD specification.
+%
+%   A structure is used to store the metadata fields in MATLAB. One caveat
+%   of using a structure is that the keys cannot have spaces in them.
+%   Since the NRRD format includes fields with spaces, the spaces are
+%   removed when reading. A fieldMap key is added to the structure that
+%   contains a Nx2 cell array. The first column signifies the key name in
+%   the MATLAB metadata structure and the second column contains the actual
+%   field name with spaces. This preserves the spaces in field names when
+%   using nrrdwrite to save an NRRD file.
+%
+%   Here is a list of supported fields and their corresponding MATLAB 
+%   datatype they are converted to:
+%       * dimension - int
+%       * lineskip - int
+%       * byteskip - int
+%       * space dimension - int
+%       * min - double
+%       * max - double
+%       * oldmin - double
+%       * oldmax - double
+%       * type - string
+%       * endian - string
+%       * encoding - string
+%       * content - string
+%       * sampleunits - string
+%       * datafile - string
+%       * space - string
+%       * sizes - 1xN matrix of ints
+%       * spacings - 1xN matrix of doubles
+%       * thicknesses - 1xN matrix of doubles
+%       * axismins - 1xN matrix of doubles
+%       * axismaxs - 1xN matrix of doubles
+%       * kinds - Nx1 cell array of strings
+%       * labels - Nx1 cell array of strings
+%       * units - Nx1 cell array of strings
+%       * spaceunits - Nx1 cell array of strings
+%       * centerings - Nx1 cell array of strings
+%       * spacedirections - MxN matrix of doubles
+%       * spaceorigin - MxN matrix of doubles
+%       * measurementframe - MxN matrix of ints
+%
+%   Note: For spacedirections, NRRD allows specifying none for a
+%   particular dimension to signify it does not correspond in space.
+%   NRRDREAD will make the first row of the matrix all NaN's to signal
+%   that it is none for the dimension. For example:
+%       space directions: none (1,0,0) (0,1,0) (0,0,1)
+%   will turn into:
+%       [NaN NaN NaN; 1 0 0; 0 1 0; 0 0 1]
+%
+%   For unsupported fields, a warning will be displayed and the value will
+%   be left as a string.
+%
 %
 %   Special syntaxes: 
 %   
-%   [...] = NRRDREAD(..., 'SupressWarnings', false) will suppress any warnings
-%   that occur during reading the NRRD file.
+%   [...] = NRRDREAD(..., 'SupressWarnings', true/false) suppresses any
+%   warnings that occur while reading if set to true. Otherwise, if false,
+%   warnings will be printed to console. The typical warnings are for
+%   field/value in the NRRD metadata that are unknown. Set to true by
+%   default.
 %
-%   [...] = NRRDREAD(..., 'FlipDomain', true/false) determines whether the
-%   data will be flipped along two axes to accomodate for the fact that
-%   NRRD files are stored as row-major but MATLAB utilizes column-major
-%   syntax. False will not flip the data and return it as it is read in.
-%   True will attempt to flip the data. If the kinds metadata field is set,
-%   then the two axes flipped are the first two 'domains', otherwise it is
-%   set to be the first two axes.
+%   [...] = NRRDREAD(..., 'FlipAxes', true/false) determines whether all of
+%   the axes will be flipped upon reading the file. The NRRD specification
+%   states that the data array is stored in memory with what is coined as
+%   C-order style. However, MATLAB stores arrays in Fortran-order style.
+%   The main difference between these two styles is that C-order has the
+%   first dimension being the slowest changing dimension while the last one
+%   is the quickest changing. Fortran-order is exactly the opposite. To
+%   accomodate for this, the axes are flipped to give the same array. By
+%   default, this option is set to true.
 %
-%   Include notes about the spacedirections field! TODO Do in Remarks
+%   [...] = NRRDREAD(..., 'Endian', 'big'/'b'/'little'/'l') sets the
+%   endianness of the file if it is not specified in the file itself. If
+%   this field is empty, then the endianness of the current machine will
+%   be used. This parameter is useful when a NRRD file was created on a
+%   machine with a different endianness but the endianness is not specified
+%   in the NRRD file itself. 
 %
-%   Current limitations/caveats:
-%   * "Block" datatype is not supported.
-%   * Only tested with "gzip" and "raw" file encodings.
-%   * Very limited testing on actual files.
+%
+%   MORE INFORMATION
+%
+%   Help everyone out by reporting bugs or contributing code at:
+%       https://github.com/addisonElliott/matnrrd
 %
 %   See the format specification online:
-%   http://teem.sourceforge.net/nrrd/format.html
+%       http://teem.sourceforge.net/nrrd/format.html
 
 % Input parser for parsing input commands
 p = inputParser;
@@ -351,7 +423,7 @@ function data = adjustEndian(data, meta)
 
 [~, ~, endian] = computer();
 
-% Note: Do not swap endianness for ASCII encoding!
+% Note: Do not swap bytes for ASCII encoding!
 needToSwap = ~any(strcmp(meta.encoding, {'txt', 'text', 'ascii'})) && ...
              ((isequal(endian, 'B') && isequal(meta.endian, 'little')) || ...
              (isequal(endian, 'L') && isequal(meta.endian, 'big')));
