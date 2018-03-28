@@ -5,8 +5,7 @@ type: unsigned int
 dimension: 3
 space: left-posterior-superior
 sizes: 3 3 3
-spacings: 1.0458000000000001 1.04582939 2
-space directions: none none none
+space directions: (1,0,0) (0,1,0) (0,0,1)
 kinds: domain domain domain
 encoding: ASCII
 space units: "mm" "mm" "mm"
