@@ -165,7 +165,13 @@
 
 % [data, metadata] = nrrdread('data/test1d_ascii.nrrd');
 % [data, metadata] = nrrdread('data/test2d_ascii.nrrd');
-[data, metadata] = nrrdread('data/test3d_ascii.nrrd');
+% [data, metadata] = nrrdread('data/test3d_ascii.nrrd');
+
+% [data, metadata] = nrrdread('data/test1d_raw.nrrd');
+% [data, metadata] = nrrdread('data/test2d_raw.nrrd');
+[data, metadata] = nrrdread('data/test3d_raw.nrrd');
+% data = double(data) + randn(3, 3, 3);
+% metadata.endian = 'big';
 
 nrrdwrite('test.nrrd', data, metadata);
 

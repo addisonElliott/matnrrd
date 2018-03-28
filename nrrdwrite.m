@@ -303,8 +303,10 @@ function writeData(fid, meta, data, AsciiDelimeter)
 
 switch (meta.encoding)
     case {'raw'}
-        % TODO Machineformat
-        fwrite(fid, data, class(data));
+        % Note: Machine format takes in l or b for little or big endian, so
+        % this is accomplished by grabbing first letter from endian field
+        % of metadata.
+        fwrite(fid, data, class(data), 0, meta.endian(1));
 
     case {'gzip', 'gz'}
         % Create and open temporary file to store the GZIP file to be
