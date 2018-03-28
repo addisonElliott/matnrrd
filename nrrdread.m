@@ -35,7 +35,7 @@ p = inputParser;
 
 addRequired(p, 'filename', @isstr);
 addParameter(p, 'SuppressWarnings', true, @islogical);
-addParameter(p, 'FlipDomain', true, @islogical);
+addParameter(p, 'FlipAxes', true, @islogical);
 
 parse(p, varargin{:});
 
@@ -132,26 +132,18 @@ if meta.dimension > 1
     data = reshape(data, meta.sizes);
 end
 
-% MATLAB uses column-major ordering while NRRD uses row-major similar to C
-% Flip two axes to accomodate for this
-if p.Results.FlipDomain
-    order = 1:ndims(data);
-
-    if isfield(meta, 'kinds')
-        domainDims = find(strcmp(meta.kinds, 'domain'));
-
-        % Flip the first two domain dimensions to accomodate for this
-        order(domainDims(1)) = domainDims(2);
-        order(domainDims(2)) = domainDims(1);
-    else
-        % Flip the first two dimensions if there is no kinds attribute
-        % This assumes the data is an image and the first two dimensions
-        % correspond to x and y axes
-        order(1:2) = [2 1];
-    end
-
+% NRRD states that the dimensions specified are set in terms of the fastest
+% dimension to the slowest changing dimension
+% This is coined traditional C-ordering in memory but MATLAB uses Fortran
+% ordering which is the opposite.
+% Thus, if FlipAxes is set, the axes are flipped to correct this
+if p.Results.FlipAxes
+    % Get order of dimensions by reversing them
+    % Permute data
+    order = fliplr(1:ndims(data));
     data = permute(data, order);
 end
+
 
 function datatype = getDatatype(nrrdDataType)
 
@@ -214,7 +206,7 @@ switch (field)
 
     % Handle strings
     case {'endian', 'encoding', 'content', 'sampleunits', 'datafile', 'space'}
-        newValue = value;
+        newValue = lower(value);
 
     % Handle vectors that should have int datatype
     case {'sizes'}
@@ -228,7 +220,19 @@ switch (field)
 
     % Handle array of strings
     case {'kinds', 'labels', 'units', 'spaceunits', 'centerings'}
-        newValue = strsplit(value, ' ');
+        % Some array of strings have quotations around the words, probably
+        % because the items can have spaces in the names and then the space
+        % delimeter idea breaks down.
+        % If there is a quotation mark anywhere in the string, then it
+        % assumes there is quotations around each word. Otherwise, use
+        % space as the delimeter
+        if any(value == '"')
+            newValue = lower(strsplit(value, '" "'));
+            newValue{1}(1) = [];
+            newValue{end}(end) = [];
+        else
+            newValue = lower(strsplit(value, ' '));
+        end
 
     % Handle matrices of double datatype
     case {'spacedirections', 'spaceorigin'}
