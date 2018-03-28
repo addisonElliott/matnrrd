@@ -22,8 +22,6 @@ filename = p.Results.filename;
 data = p.Results.data;
 meta = p.Results.meta;
 
-% Do in temporary file and copy over for zip, gzip, later
-
 % If encoding is not specified, set to gzip by default
 if ~isfield(meta, 'encoding')
     meta.encoding = 'gzip';

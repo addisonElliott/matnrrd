@@ -176,21 +176,14 @@
 
 % [data, metadata] = nrrdread('data/test1d_gzip.nrrd');
 % [data, metadata] = nrrdread('data/test2d_gzip.nrrd');
-[data, metadata] = nrrdread('data/test3d_gzip.nrrd');
-
-nrrdwrite('test.nrrd', data, metadata);
-
-[data2, metadata2] = nrrdread('test.nrrd');
-
-assert(all(all(all(data == data2))), 'GZIP Matrices are different');
-
-% measurement frame test for nrrdread maybe? Well, I don't know if that matters
-% as much, the real question is when we go to write it out
-
-% TODO Now I want to create some NRRD files with BZIP2 encoding, GZIP
-% encoding, GZ2 encoding, RAW encoding, and PNG encoding
-
-% TODO Create option to add quotation format for array of strings...
+% [data, metadata] = nrrdread('data/test3d_gzip.nrrd');
+% [data, metadata] = nrrdread('data/test3d_bigendian_raw.nrrd');
+% 
+% nrrdwrite('test.nrrd', data, metadata);
+% 
+% [data2, metadata2] = nrrdread('test.nrrd');
+% 
+% assert(all(all(all(data == data2))), 'GZIP Matrices are different');
 
 % filename = 'data/303PREDIASTOLE.seg.nrrd';
 % filename = 'data/an-hist.nrrd';
