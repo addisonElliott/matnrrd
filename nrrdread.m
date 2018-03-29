@@ -80,22 +80,27 @@ function [data, meta] = nrrdread(varargin)
 %   field/value in the NRRD metadata that are unknown. Set to true by
 %   default.
 %
-%   [...] = NRRDREAD(..., 'FlipAxes', true/false) determines whether all of
-%   the axes will be flipped upon reading the file. The NRRD specification
-%   states that the data array is stored in memory with what is coined as
-%   C-order style. However, MATLAB stores arrays in Fortran-order style.
-%   The main difference between these two styles is that C-order has the
-%   first dimension being the slowest changing dimension while the last one
-%   is the quickest changing. Fortran-order is exactly the opposite. To
-%   accomodate for this, the axes are flipped to give the same array. By
-%   default, this option is set to true.
-%
 %   [...] = NRRDREAD(..., 'Endian', 'big'/'b'/'little'/'l') sets the
 %   endianness of the file if it is not specified in the file itself. If
 %   this field is empty, then the endianness of the current machine will
 %   be used. This parameter is useful when a NRRD file was created on a
 %   machine with a different endianness but the endianness is not specified
 %   in the NRRD file itself. 
+%
+%
+%   REMARKS
+%
+%   The NRRD specification states that the data array is stored in memory 
+%   with what is coined as C-order style. However, MATLAB stores arrays in 
+%   Fortran-order style. The key distinction between these two styles is
+%   that the horizontal and vertical (i.e. x and y) dimensions will be 
+%   flipped. The typical solution to this problem is to use PERMUTE to
+%   switch the horizontal and vertical dimensions.
+%
+%   In addition, for NRRD files with color information, the color dimension
+%   will be at the front of the array. The normal convention is to have the
+%   color component be the last dimension. This can be fixed using PERMUTE
+%   to move the first dimension to the end.
 %
 %
 %   MORE INFORMATION
@@ -113,7 +118,6 @@ p = inputParser;
 
 addRequired(p, 'filename', @isstr);
 addParameter(p, 'SuppressWarnings', true, @islogical);
-addParameter(p, 'FlipAxes', true, @islogical);
 addParameter(p, 'Endian', [], @(x) any(strcmp({'little', 'l', 'L', 'big', ...
                                     'b', 'B'}, x)));
 
@@ -221,18 +225,6 @@ data = adjustEndian(data, meta);
 % Reshape the matrix if it has more than 1 dimension
 if meta.dimension > 1
     data = reshape(data, meta.sizes);
-end
-
-% NRRD states that the dimensions specified are set in terms of the fastest
-% dimension to the slowest changing dimension
-% This is coined traditional C-ordering in memory but MATLAB uses Fortran
-% ordering which is the opposite.
-% Thus, if FlipAxes is set, the axes are flipped to correct this
-if p.Results.FlipAxes
-    % Get order of dimensions by reversing them
-    % Permute data
-    order = fliplr(1:ndims(data));
-    data = permute(data, order);
 end
 
 

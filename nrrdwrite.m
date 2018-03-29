@@ -80,16 +80,6 @@ function nrrdwrite(varargin)
 %   field/value in the NRRD metadata that are unknown. Set to true by
 %   default.
 %
-%   [...] = NRRDWRITE(..., 'FlipAxes', true/false) determines whether all of
-%   the axes will be flipped upon writing the file. The NRRD specification
-%   states that the data array is stored in memory with what is coined as
-%   C-order style. However, MATLAB stores arrays in Fortran-order style.
-%   The main difference between these two styles is that C-order has the
-%   first dimension being the slowest changing dimension while the last one
-%   is the quickest changing. Fortran-order is exactly the opposite. To
-%   accomodate for this, the axes are flipped to give the same array. By
-%   default, this option is set to true.
-%
 %   [...] = NRRDWRITE(..., 'AsciiDelimeter', char) sets the character to 
 %   use when delineating values. This option is only valid when the 
 %   encoding is set to ascii. By default, this is set to be a newline (\n).
@@ -104,6 +94,21 @@ function nrrdwrite(varargin)
 %       space units: "mm" "mm" "mm"
 %   otherwise, if set to false:
 %       space units: mm mm mm
+%
+%
+%   REMARKS
+%
+%   The NRRD specification states that the data array is stored in memory 
+%   with what is coined as C-order style. However, MATLAB stores arrays in 
+%   Fortran-order style. The key distinction between these two styles is
+%   that the horizontal and vertical (i.e. x and y) dimensions will be 
+%   flipped. The typical solution to this problem is to use PERMUTE to
+%   switch the horizontal and vertical dimensions.
+%
+%   In addition, for NRRD files with color information, the color dimension
+%   will be at the front of the array. The normal convention is to have the
+%   color component be the last dimension. This can be fixed using PERMUTE
+%   to move the first dimension to the end.
 %
 %
 %   MORE INFORMATION
@@ -123,7 +128,6 @@ addRequired(p, 'filename', @isstr);
 addRequired(p, 'data', @(x) isnumeric(x) || islogical(x));
 addRequired(p, 'meta', @isstruct);
 addParameter(p, 'SuppressWarnings', true, @islogical);
-addParameter(p, 'FlipAxes', true, @islogical);
 addParameter(p, 'AsciiDelimeter', '\n', @ischar);
 addParameter(p, 'UseStringVectorQuotationMarks', false, @islogical);
 
@@ -265,18 +269,6 @@ end
 
 % Append a blank space to the file to indicate data is coming next
 fprintf(fid, '\n');
-
-% NRRD states that the dimensions specified are set in terms of the fastest
-% dimension to the slowest changing dimension
-% This is coined traditional C-ordering in memory but MATLAB uses Fortran
-% ordering which is the opposite.
-% Thus, if FlipAxes is set, the axes are flipped to correct this
-if p.Results.FlipAxes
-    % Get order of dimensions by reversing them
-    % Permute data
-    order = fliplr(1:ndims(data));
-    data = permute(data, order);
-end
 
 writeData(fid, meta, data, p.Results.AsciiDelimeter);
 
