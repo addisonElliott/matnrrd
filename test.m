@@ -159,3 +159,7 @@ assert(all(all(metadata.spacedirections == [1 0 0; 0 1 0; 0 0 1])), 'Space direc
 assert(all(strcmp(metadata.kinds, 'domain')), 'Kinds not correct for test3d');
 assert(all(strcmp(metadata.spaceunits, 'mm')), 'Space units not correct for test3d');
 assert(all(metadata.spaceorigin == [100.1 200.3 -500]), 'Space origin not correct for test3d');
+
+
+
+% TODO Test custom field map

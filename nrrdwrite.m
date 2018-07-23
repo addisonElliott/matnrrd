@@ -213,6 +213,9 @@ fieldOrder = {'type' ...
     'measurementframe' ...
     'datafile'};
 
+% TODO Store custom fields (not in fieldOrder) with := instead of :
+% (key/value pair)
+
 % Loop through each of the fieldOrder fields, find it in the metadata. If
 % found, then this is added to the sorted field names array and removed
 % from the field names array.
@@ -314,9 +317,14 @@ function [str] = getVectorStr(value, formatStr, delimeter)
     str = strjoin(values, delimeter);
 end
 
-
 function str = getFieldValueStr(field, value, SuppressWarnings, ...
                             UseStringVectorQuotationMarks)
+% Note: It is difficult to automatically identify the type of a value
+% because MATLAB saves all variables as doubles even if they are integers
+% Also, number list and a vector are the same and cannot be distinguished
+% based on type
+% Because of this reason, each custom field must be given a type so it is
+% known how to convert it
 
 switch (field)
     % Handle 32-bit ints
