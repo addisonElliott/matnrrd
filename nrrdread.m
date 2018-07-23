@@ -186,9 +186,7 @@ if ~isempty(fieldMap)
     meta(1).fieldMap = fieldMap;
 end
 
-% TODO Check what the required fields are and default values
-
-% Get the size of the data
+% Check that required fields are present
 assert(isfield(meta, 'sizes') && ...
        isfield(meta, 'dimension') && ...
        isfield(meta, 'encoding') && ...
