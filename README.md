@@ -2,6 +2,8 @@ matnrrd
 ========
 matnrrd is a MATLAB library that provides easy-to-use functions for loading and saving [NRRD](http://teem.sourceforge.net/nrrd/) files. One feature that sets matnrrd apart from other NRRD readers is that it parses the metadata fields into sensible datatypes.
 
+matnrrd can be found on [MATLAB File Exchange](https://www.mathworks.com/matlabcentral/fileexchange/66658-addisonelliott-matnrrd) as well.
+
 Installation
 ------------
 
