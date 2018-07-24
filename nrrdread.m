@@ -120,7 +120,7 @@ addRequired(p, 'filename', @isstr);
 addParameter(p, 'SuppressWarnings', true, @islogical);
 addParameter(p, 'Endian', [], @(x) any(strcmp({'little', 'l', 'L', 'big', ...
                                     'b', 'B'}, x)));
-addParameter(p, 'CustomFieldMap', {}, @(x) iscell(x) && ismatrix(ra) && ...
+addParameter(p, 'CustomFieldMap', {}, @(x) iscell(x) && ismatrix(x) && ...
                                     (isempty(x) || size(x, 2) == 2)); 
 parse(p, varargin{:});
 
@@ -182,6 +182,11 @@ while (true)
     end
 
     type = getFieldType(field, p.Results.CustomFieldMap, p.Results.SuppressWarnings);
+
+    if strcmp(type, 'int')
+        i = 5;
+    end
+
     meta(1).(field) = parseFieldValue(value, type, p.Results.SuppressWarnings);
 
 %     meta(1).(field) = parseFieldValue(field, value, p.Results.SuppressWarnings);
@@ -448,14 +453,19 @@ switch (field)
         type = 'int matrix';
 
     otherwise
-        customFieldIndex = find(strcmp(customFieldValueMap(:, 1), field));
+        if isempty(customFieldValueMap)
+            customFieldIndex = [];
+        else
+            customFieldIndex = find(strcmp(customFieldValueMap(:, 1), field));
+        end
 
         if ~isempty(customFieldIndex)
-            type = customFieldValueMap(customFieldIndex, 2);
+            type = customFieldValueMap{customFieldIndex, 2};
         else
             if ~suppressWarnings
-            warning(['Unknown field ' field '. If this is a known custom '
-                     'field then specify the type in the customFieldValueMap']);
+                warning(['Unknown field ' field '. If this is a known ' ...
+                        'custom field then specify the type in the ' ...
+                        'customFieldValueMap']);
             end
 
             % Default the type to string because it is a string by default
