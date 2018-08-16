@@ -1,3 +1,5 @@
+% Testing nrrdread
+% -------------------------------------------------------------------------
 [data, metadata] = nrrdread('data/test1d_ascii.nrrd');
 
 assert(all(data == (1:27)'), 'Invalid data matrix for test1d');
@@ -239,3 +241,66 @@ assert(all(metadata.intvector == [100 200 -300]), 'Custom field intvector is inc
 assert(all(metadata.doublevector == [100.5 200.3 -300.99]), 'Custom field doublevector is incorrect');
 assert(all(all(metadata.intmatrix == [1 0 0; 0 1 0; 0 0 1])), 'Custom field intmatrix is incorrect');
 assert(all(all(metadata.doublematrix == [1.2 0.3 0; 0 1.5 0; 0 -0.55 1.6])), 'Custom field doublematrix is incorrect');
+
+% Testing nrrdwrite
+% -------------------------------------------------------------------------
+filename = 'data/test.nrrd';
+
+[data, metadata] = nrrdread('data/test1d_ascii.nrrd');
+nrrdwrite(filename, data, metadata);
+
+% Open file
+[fid, msg] = fopen(filename, 'r');
+assert(fid > 3, ['Could not open file: ' msg]);
+
+assert(strcmp(fgetl(fid), 'NRRD0005'), 'Invalid magic string');
+fgetl(fid); fgetl(fid); fgetl(fid);
+assert(strcmp(fgetl(fid), 'type: uint8'), 'Invalid type');
+assert(strcmp(fgetl(fid), 'dimension: 1'), 'Invalid dimension');
+assert(strcmp(fgetl(fid), 'sizes: 27'), 'Invalid sizes');
+assert(strcmp(fgetl(fid), 'kinds: domain'), 'Invalid domain');
+assert(strcmp(fgetl(fid), 'endian: little'), 'Invalid endian');
+assert(strcmp(fgetl(fid), 'encoding: ascii'), 'Invalid encoding');
+assert(strcmp(fgetl(fid), 'spacings: 1.0458'), 'Invalid spacings');
+
+% TODO Still need to write documentation for nrrdwrite
+% TODO Still need to fix some quotes thing for nrrdwrite
+
+
+[data, metadata] = nrrdread('data/test2d_ascii.nrrd');
+nrrdwrite(filename, data, metadata);
+
+% Open file
+fclose(fid);
+[fid, msg] = fopen(filename, 'r');
+assert(fid > 3, ['Could not open file: ' msg]);
+
+fgetl(fid); fgetl(fid); fgetl(fid); fgetl(fid);
+assert(strcmp(fgetl(fid), 'type: uint16'), 'Invalid type');
+assert(strcmp(fgetl(fid), 'dimension: 2'), 'Invalid dimension');
+assert(strcmp(fgetl(fid), 'space dimension: 2'), 'Invalid space dimension');
+% TODO sizes is wrong I think?
+assert(strcmp(fgetl(fid), 'sizes: 9 3'), 'Invalid sizes ');
+assert(strcmp(fgetl(fid), 'space directions: none none'), 'Invalid space directions');
+assert(strcmp(fgetl(fid), 'kinds: domain domain'), 'Invalid domain');
+assert(strcmp(fgetl(fid), 'endian: little'), 'Invalid endian');
+assert(strcmp(fgetl(fid), 'encoding: ascii'), 'Invalid encoding');
+assert(strcmp(fgetl(fid), 'spacings: 1.0458 2'), 'Invalid spacings');
+assert(strcmp(fgetl(fid), 'space units: mm mm'), 'Invalid space units');
+assert(strcmp(fgetl(fid), 'space origin: (100,200)'), 'Invalid space origin');
+
+fclose(fid);
+% 
+% [data, metadata] = nrrdread('data/test2d_ascii.nrrd');
+% 
+% assert(all(all(data == reshape(1:27, [3 9]))), 'Invalid data matrix for test2d');
+% assert(metadata.dimension == 2, 'Dimension is not 2 for test2d');
+% assert(strcmp(metadata.type, 'uint16'), 'Type is not uint16 for test2d');
+% assert(all(metadata.sizes == [3 9]), 'Sizes not right for test2d');
+% assert(strcmp(metadata.encoding, 'ascii'), 'Not ASCII encoding for test2d');
+% assert(metadata.spacedimension == 2, 'Space dimension is not 2 for test2d');
+% assert(all(metadata.spacings == [1.0458 2]), 'Spacing not correct for test2d');
+% assert(all(isnan(metadata.spacedirections)), 'Space directions not correct for test2d');
+% assert(all(strcmp(metadata.kinds, 'domain')), 'Kinds not correct for test2d');
+% assert(all(strcmp(metadata.spaceunits, 'mm')), 'Space units not correct for test2d');
+% assert(all(metadata.spaceorigin == [100 200]), 'Space origin not correct for test2d');

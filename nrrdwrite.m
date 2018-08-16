@@ -240,7 +240,7 @@ fieldNames = [sortedFieldNames; fieldNames];
 
 % Start index for custom fields
 % The custom fields come right after the sorted field names
-customFieldIndex = length(fieldNames);
+customFieldIndex = length(sortedFieldNames);
 
 % If fieldMap field is present in the metadata, then copy it over to a
 % local variable and otherwise create an empty local variable fieldMap
@@ -261,8 +261,7 @@ for kk = 1:length(fieldNames)
 
     type = getFieldType(field, p.Results.CustomFieldMap, p.Results.SuppressWarnings);
 
-    value = getFieldValueStr(field, meta.(field), ...
-        p.Results.SuppressWarnings, p.Results.UseStringVectorQuotationMarks);
+    value = formatFieldValue(meta.(field), type, p.Results.SuppressWarnings, p.Results.UseStringVectorQuotationMarks);
 
     % If the field name is present in the fieldMap, then use the mapped
     % value. This will useful for replacing spaces when writing the field
@@ -321,7 +320,7 @@ function [str] = getVectorStr(value, formatStr, delimeter)
 end
 
 
-function type = getFieldType(field, customFieldValueMap, suppressWarnings)
+function type = getFieldType(field, customFieldMap, suppressWarnings)
 switch (field)
     % Handle 32-bit ints
     case {'dimension', 'lineskip', 'byteskip', 'spacedimension'}
@@ -363,14 +362,16 @@ switch (field)
         type = 'int matrix';
 
     otherwise
-        if isempty(customFieldValueMap)
+        % customFieldIndex is entirely different from variable in main
+        % script
+        if isempty(customFieldMap)
             customFieldIndex = [];
         else
-            customFieldIndex = find(strcmp(customFieldValueMap(:, 1), field));
+            customFieldIndex = find(strcmp(customFieldMap(:, 1), field));
         end
 
         if ~isempty(customFieldIndex)
-            type = customFieldValueMap{customFieldIndex, 2};
+            type = customFieldMap{customFieldIndex, 2};
         else
             if ~suppressWarnings
                 warning(['Unknown field ' field '. If this is a known ' ...
@@ -381,137 +382,6 @@ switch (field)
             % Default the type to string because it is a string by default
             type = 'string';
         end
-end
-end
-
-
-function newValue = parseFieldValue(value, type, suppressWarnings)
-% TODO Allow custom field parsing
-
-% Parse a field value based on its given type
-%
-% Type is one of the following strings indicating it's type:
-%   int
-%   datatype
-%   double
-%   string
-%   int list
-%   double list
-%   string list
-%   int vector
-%   double vector
-%   int matrix
-%   double matrix
-
-switch (type)
-    case {'int'}
-        newValue = int32(str2double(value));
-
-    case {'double'}
-        newValue = str2double(value);
-
-    case {'string'}
-        newValue = lower(value);
-
-    case {'datatype'}
-        newValue = getDatatype(value);
-
-    case {'int list'}
-        values = strsplit(value, ' ');
-        newValue = int32(cellfun(@str2double, values));
-
-    case {'double list'}
-        values = strsplit(value, ' ');
-        newValue = cellfun(@str2double, values);
-
-    case {'string list'}
-        % Some array of strings have quotations around the words, probably
-        % because the items can have spaces in the names and then the space
-        % delimeter idea breaks down.
-        % If there is a quotation mark anywhere in the string, then it
-        % assumes there is quotations around each word. Otherwise, use
-        % space as the delimeter
-        if any(value == '"')
-            newValue = lower(strsplit(value, '" "'));
-            newValue{1}(1) = [];
-            newValue{end}(end) = [];
-        else
-            newValue = lower(strsplit(value, ' '));
-        end
-
-    case {'int vector'}
-        % Remove first and last parantheses from string and then split by comma
-        rowValues = strsplit(value(2:end - 1), ',');
-
-        % Take split values and turn into a vector of doubles, concatenate to
-        % the matrix
-        newValue = cellfun(@(x) int32(str2double(x)), rowValues);
-
-    case {'double vector'}
-        % Remove first and last parantheses from string and then split by comma
-        rowValues = strsplit(value(2:end - 1), ',');
-
-        % Take split values and turn into a vector of doubles, concatenate to
-        % the matrix
-        newValue = cellfun(@str2double, rowValues);
-
-    % Handle matrices of int datatype
-    case {'int matrix'}
-        values = strsplit(value, ' ');
-
-        noneDim = [];
-
-        for k = 1:length(values)
-            % If a particular dimension has none, then set the row equal to
-            % NaN so that it can be distinguished later on
-            if strcmp(values{k}, 'none')
-                noneDim = [noneDim k];
-                continue;
-            end
-
-            % Remove first and last parantheses from string and then split by comma
-            rowValues = strsplit(values{k}(2:end - 1), ',');
-
-            % Take split values and turn into a vector of doubles, concatenate to
-            % the matrix
-            newValue(k, :) = cellfun(@(x) int32(str2double(x)), rowValues);
-        end
-
-        % Set all dimensions that were none to NaN to indicate these are
-        % not relevant
-        newValue(noneDim, :) = NaN;
-
-    % Handle matrices of double datatype
-    case {'double matrix'}
-        values = strsplit(value, ' ');
-
-        noneDim = [];
-
-        for k = 1:length(values)
-            % If a particular dimension has none, then set the row equal to
-            % NaN so that it can be distinguished later on
-            if strcmp(values{k}, 'none')
-                noneDim = [noneDim k];
-                continue;
-            end
-
-            % Remove first and last parantheses from string and then split by comma
-            rowValues = strsplit(values{k}(2:end - 1), ',');
-
-            % Take split values and turn into a vector of doubles, concatenate to
-            % the matrix
-            newValue(k, :) = cellfun(@str2double, rowValues);
-        end
-
-        % Set all dimensions that were none to NaN to indicate these are
-        % not relevant
-        newValue(noneDim, :) = NaN;
-
-    otherwise
-        if ~suppressWarnings
-            warning(['Unknown type ' type]);
-        end
-        newValue = value;
 end
 end
 
@@ -552,166 +422,22 @@ switch (type)
         str = value;
 
     case {'datatype'}
-        newValue = getDatatype(value);
+        % TODO Get datatype from the data matrix first using class(x)
+        % and converting it. Then document this change.
+        str = value;
 
     case {'int list'}
-        values = strsplit(value, ' ');
-        newValue = int32(cellfun(@str2double, values));
-
-    case {'double list'}
-        values = strsplit(value, ' ');
-        newValue = cellfun(@str2double, values);
-
-    case {'string list'}
-        % Some array of strings have quotations around the words, probably
-        % because the items can have spaces in the names and then the space
-        % delimeter idea breaks down.
-        % If there is a quotation mark anywhere in the string, then it
-        % assumes there is quotations around each word. Otherwise, use
-        % space as the delimeter
-        if any(value == '"')
-            newValue = lower(strsplit(value, '" "'));
-            newValue{1}(1) = [];
-            newValue{end}(end) = [];
-        else
-            newValue = lower(strsplit(value, ' '));
-        end
-
-    case {'int vector'}
-        % Remove first and last parantheses from string and then split by comma
-        rowValues = strsplit(value(2:end - 1), ',');
-
-        % Take split values and turn into a vector of doubles, concatenate to
-        % the matrix
-        newValue = cellfun(@(x) int32(str2double(x)), rowValues);
-
-    case {'double vector'}
-        % Remove first and last parantheses from string and then split by comma
-        rowValues = strsplit(value(2:end - 1), ',');
-
-        % Take split values and turn into a vector of doubles, concatenate to
-        % the matrix
-        newValue = cellfun(@str2double, rowValues);
-
-    % Handle matrices of int datatype
-    case {'int matrix'}
-        values = strsplit(value, ' ');
-
-        noneDim = [];
-
-        for k = 1:length(values)
-            % If a particular dimension has none, then set the row equal to
-            % NaN so that it can be distinguished later on
-            if strcmp(values{k}, 'none')
-                noneDim = [noneDim k];
-                continue;
-            end
-
-            % Remove first and last parantheses from string and then split by comma
-            rowValues = strsplit(values{k}(2:end - 1), ',');
-
-            % Take split values and turn into a vector of doubles, concatenate to
-            % the matrix
-            newValue(k, :) = cellfun(@(x) int32(str2double(x)), rowValues);
-        end
-
-        % Set all dimensions that were none to NaN to indicate these are
-        % not relevant
-        newValue(noneDim, :) = NaN;
-
-    % Handle matrices of double datatype
-    case {'double matrix'}
-        values = strsplit(value, ' ');
-
-        noneDim = [];
-
-        for k = 1:length(values)
-            % If a particular dimension has none, then set the row equal to
-            % NaN so that it can be distinguished later on
-            if strcmp(values{k}, 'none')
-                noneDim = [noneDim k];
-                continue;
-            end
-
-            % Remove first and last parantheses from string and then split by comma
-            rowValues = strsplit(values{k}(2:end - 1), ',');
-
-            % Take split values and turn into a vector of doubles, concatenate to
-            % the matrix
-            newValue(k, :) = cellfun(@str2double, rowValues);
-        end
-
-        % Set all dimensions that were none to NaN to indicate these are
-        % not relevant
-        newValue(noneDim, :) = NaN;
-
-    otherwise
-        if ~suppressWarnings
-            warning(['Unknown type ' type]);
-        end
-        newValue = value;
-end
-
-switch (field)
-    % Handle 32-bit ints
-    case {'dimension', 'lineskip', 'byteskip', 'spacedimension'}
-%         str = num2str(value, '%i');
-
-    % Handle doubles
-    case {'min', 'max', 'oldmin', 'oldmax'}
-        % Note: Double precision can store at maximum 16 decimal places
-%         str = num2str(value, '%.16g');
-
-    % Handle strings
-    case {'type', 'endian', 'encoding', 'content', 'sampleunits', 'datafile', 'space'}
-%         str = value;
-
-    % Handle vectors that should have int datatype 
-    case {'sizes'}
         str = getVectorStr(value, '%i', ' ');
 
-    % Handle vectors that should have double datatype
-    case {'spacings', 'thicknesses', 'axismins', 'axismaxs'}
+    case {'double list'}
         str = getVectorStr(value, '%.16g', ' ');
 
-    % Handle array of strings
-    case {'kinds', 'centerings'}
+    case {'string list'}
+        % TODO Need some way to handle UseStringVectorQuotationMarks
         str = strjoin(value, ' ');
 
-    % Handle array of strings (has quotation marks around them in official
-    % standard)
-    case {'labels', 'units', 'spaceunits'}
-        % In the official NRRD standard, there are a few fields that have
-        % quotation marks around each string that is present. When using
-        % NRRD's tool to create files, it follows the standard and includes
-        % the quotation marks but I have seen some implementations (such as
-        % pynrrd, Slicer) that does not use quotation marks.
-        % UseStringVectorQuotationMarks is a parameter that allows turning
-        % this on/off. By default, it is off because I don't think the
-        % quotations are necessary most of the time.
-        if UseStringVectorQuotationMarks
-            str = ['"' strjoin(value, '" "') '"'];
-        else
-            str = strjoin(value, ' ');
-        end
-
-    % Handle matrices of double datatype
-    case {'spacedirections', 'spaceorigin'}
-        str = '';
-
-        for k = 1:size(value, 1)
-            if all(isnan(value(k, :)))
-                str = [str 'none '];
-            else
-                vectorStr = getVectorStr(value(k, :), '%.16g', ',');
-                str = [str '(' vectorStr ') '];
-            end
-        end
-
-        str(end) = [];
-
-    % Handle matrices of int datatype
-    case {'measurementframe'}
+    % Vector and matrix are handled the same
+    case {'int vector', 'int matrix'}
         str = '';
 
         for k = 1:size(value, 1)
@@ -725,9 +451,23 @@ switch (field)
 
         str(end) = [];
 
+    case {'double vector', 'double matrix'}
+        str = '';
+
+        for k = 1:size(value, 1)
+            if all(isnan(value(k, :)))
+                str = [str 'none '];
+            else
+                vectorStr = getVectorStr(value(k, :), '%.16g', ',');
+                str = [str '(' vectorStr ') '];
+            end
+        end
+
+        str(end) = [];
+
     otherwise
         if ~SuppressWarnings
-            warning(['Unknown field ' field]);
+            warning(['Unknown type ' type]);
         end
         str = value;
 end
