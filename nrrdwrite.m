@@ -240,7 +240,7 @@ fieldNames = [sortedFieldNames; fieldNames];
 
 % Start index for custom fields
 % The custom fields come right after the sorted field names
-customFieldIndex = length(sortedFieldNames);
+customFieldStartIndex = length(sortedFieldNames);
 
 % If fieldMap field is present in the metadata, then copy it over to a
 % local variable and otherwise create an empty local variable fieldMap
@@ -275,7 +275,7 @@ for kk = 1:length(fieldNames)
 
     % Write the field and value to the file
     % If writing custom fields, then output as a key/value pair instead
-    if kk > customFieldIndex
+    if kk > customFieldStartIndex
         fprintf(fid, '%s:= %s\n', field, value);
     else
         fprintf(fid, '%s: %s\n', field, value);
@@ -388,9 +388,7 @@ end
 
 function str = formatFieldValue(value, type, SuppressWarnings, ...
                             UseStringVectorQuotationMarks)
-% TODO Allow custom field parsing
-
-% Parse a field value based on its given type
+% Format a field value based on its type
 %
 % Type is one of the following strings indicating it's type:
 %   int
@@ -404,12 +402,7 @@ function str = formatFieldValue(value, type, SuppressWarnings, ...
 %   double vector
 %   int matrix
 %   double matrix
-% Note: It is difficult to automatically identify the type of a value
-% because MATLAB saves all variables as doubles even if they are integers
-% Also, number list and a vector are the same and cannot be distinguished
-% based on type
-% Because of this reason, each custom field must be given a type so it is
-% known how to convert it
+%
 
 switch (type)
     case {'int'}

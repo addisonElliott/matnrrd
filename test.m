@@ -324,18 +324,67 @@ for i = 1:27
     assert(strcmp(fgetl(fid), num2str(i)), 'Invalid ASCII data');
 end
 
+
+% No custom field map is given so these are read/written as strings
+[data, metadata] = nrrdread('data/test_customFields.nrrd');
+nrrdwrite(filename, data, metadata);
+
+% Open file
 fclose(fid);
+[fid, msg] = fopen(filename, 'r');
+assert(fid > 3, ['Could not open file: ' msg]);
+
+fgetl(fid); fgetl(fid); fgetl(fid); fgetl(fid);
+assert(strcmp(fgetl(fid), 'type: uint8'), 'Invalid type');
+assert(strcmp(fgetl(fid), 'dimension: 1'), 'Invalid dimension');
+assert(strcmp(fgetl(fid), 'sizes: 27'), 'Invalid sizes ');
+assert(strcmp(fgetl(fid), 'kinds: domain'), 'Invalid domain');
+assert(strcmp(fgetl(fid), 'endian: little'), 'Invalid endian');
+assert(strcmp(fgetl(fid), 'encoding: ascii'), 'Invalid encoding');
+assert(strcmp(fgetl(fid), 'spacings: 1.0458'), 'Invalid spacings');
+assert(strcmp(fgetl(fid), 'int:= 24'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'double:= 25.5566'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'string:= this is a long string of information that is important.'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'int list:= 1 2 3 4 5 100'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'double list:= 0.2 0.502 0.8'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'string list:= words are split by space in list'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'int vector:= (100, 200, -300)'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'double vector:= (100.5,200.3,-300.99)'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'int matrix:= (1,0,0) (0,1,0) (0,0,1)'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'double matrix:= (1.2,0.3,0) (0,1.5,0) (0,-0.55,1.6)'), 'Invalid custom fields');
 
 
-% [data, metadata] = nrrdread('data/test3d_ascii.nrrd');
-% 
-% assert(all(all(all(data == reshape(1:27, [3 3 3])))), 'Invalid data matrix for test3d');
-% assert(metadata.dimension == 3, 'Dimension is not 3 for test3d');
-% assert(strcmp(metadata.type, 'uint32'), 'Type is not uint32 for test3d');
-% assert(all(metadata.sizes == [3 3 3]), 'Sizes not right for test3d');
-% assert(strcmp(metadata.encoding, 'ascii'), 'Not ASCII encoding for test3d');
-% assert(strcmp(metadata.space, 'left-posterior-superior'), 'Space not right for test3d');
-% assert(all(all(metadata.spacedirections == [1 0 0; 0 1 0; 0 0 1])), 'Space directions not correct for test3d');
-% assert(all(strcmp(metadata.kinds, 'domain')), 'Kinds not correct for test3d');
-% assert(all(strcmp(metadata.spaceunits, 'mm')), 'Space units not correct for test3d');
-% assert(all(metadata.spaceorigin == [100.1 200.3 -500]), 'Space origin not correct for test3d');
+% Custom fields with field map
+fieldMap = {'int' 'int'; 'double' 'double'; 'string' 'string'; ...
+            'intlist' 'int list'; 'doublelist' 'double list'; ...
+            'stringlist' 'string list'; 'intvector' 'int vector'; ...
+            'doublevector' 'double vector'; 'intmatrix' 'int matrix'; ...
+            'doublematrix' 'double matrix'};
+[data, metadata] = nrrdread('data/test_customFields.nrrd', 'CustomFieldMap', fieldMap);
+nrrdwrite(filename, data, metadata, 'CustomFieldMap', fieldMap);
+
+% Open file
+fclose(fid);
+[fid, msg] = fopen(filename, 'r');
+assert(fid > 3, ['Could not open file: ' msg]);
+
+fgetl(fid); fgetl(fid); fgetl(fid); fgetl(fid);
+assert(strcmp(fgetl(fid), 'type: uint8'), 'Invalid type');
+assert(strcmp(fgetl(fid), 'dimension: 1'), 'Invalid dimension');
+assert(strcmp(fgetl(fid), 'sizes: 27'), 'Invalid sizes ');
+assert(strcmp(fgetl(fid), 'kinds: domain'), 'Invalid domain');
+assert(strcmp(fgetl(fid), 'endian: little'), 'Invalid endian');
+assert(strcmp(fgetl(fid), 'encoding: ascii'), 'Invalid encoding');
+assert(strcmp(fgetl(fid), 'spacings: 1.0458'), 'Invalid spacings');
+assert(strcmp(fgetl(fid), 'int:= 24'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'double:= 25.5566'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'string:= this is a long string of information that is important.'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'int list:= 1 2 3 4 5 100'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'double list:= 0.2 0.502 0.8'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'string list:= words are split by space in list'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'int vector:= (100,200,-300)'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'double vector:= (100.5,200.3,-300.99)'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'int matrix:= (1,0,0) (0,1,0) (0,0,1)'), 'Invalid custom fields');
+assert(strcmp(fgetl(fid), 'double matrix:= (1.2,0.3,0) (0,1.5,0) (0,-0.55,1.6)'), 'Invalid custom fields');
+
+fclose(fid);
