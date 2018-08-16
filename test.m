@@ -213,12 +213,7 @@ assert(ischar(metadata.doublevector), 'Custom field double vector is not a strin
 assert(ischar(metadata.intmatrix), 'Custom field int matrix is not a string and should be');
 assert(ischar(metadata.doublematrix), 'Custom field double matrix is not a string and should be');
 
-
 % Test custom fields with a custom field map
-
-% TODO Need to make sure to note that the field map should remove all
-% spaces from field name
-
 fieldMap = {'int' 'int'; 'double' 'double'; 'string' 'string'; ...
             'intlist' 'int list'; 'doublelist' 'double list'; ...
             'stringlist' 'string list'; 'intvector' 'int vector'; ...

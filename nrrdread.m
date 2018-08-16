@@ -60,6 +60,12 @@ function [data, meta] = nrrdread(varargin)
 %   exception of four. The NRRD file must contain the type, dimension,
 %   sizes and encoding fields.
 %
+%   The NRRD specification allows custom entries denoted as key/value
+%   pairs which are the same as fields. These custom fields are read as
+%   strings unless their datatype is given in the CustomFieldMap, in which
+%   case the field will be parsed to the data type. See the CustomFieldMap
+%   note in Special Syntaxes for more information
+%
 %   Note: For spacedirections, NRRD allows specifying none for a
 %   particular dimension to indicate it is not a spatial domain.
 %   NRRDREAD will make the first row of the matrix all NaN's to signal
@@ -86,6 +92,29 @@ function [data, meta] = nrrdread(varargin)
 %   be used. This parameter is useful when a NRRD file was created on a
 %   machine with a different endianness but the endianness is not specified
 %   in the NRRD file itself. 
+%
+%   [...] = NRRDREAD(..., 'CustomFieldMap', Nx2 Cell matrix) indicates what 
+%   datatype custom fields should be parsed as. Each row of the field map
+%   is considered an entry where the first column is the field name WITH
+%   SPACES REMOVED and the second column is a string identifying the 
+%   datatype. The list of valid datatypes are:
+%
+%   Datatype        Example Syntax in NRRD File
+%   -------------------------------------------
+%   int             5
+%   double          2.5
+%   string          testing
+%   int list        1 2 3 4 5
+%   double list     1.2 2.0 3.1 4.7 5.0
+%   string list     first second third
+%   int vector      (1,0,0)
+%   double vector   (3.14,3.14,6.28)
+%   int matrix      (1,0,0) (0,1,0) (0,0,1)
+%   double matrix   (1.2,0.3,0) (0,1.5,0) (0,-0.55,1.6)
+%
+%   Here is an example custom field map:
+%       nrrdread(..., 'CustomFieldMap', {'version' 'string'; 
+%                   'color' 'int vector'; 'test' 'double matrix'})
 %
 %
 %   REMARKS
@@ -183,13 +212,7 @@ while (true)
 
     type = getFieldType(field, p.Results.CustomFieldMap, p.Results.SuppressWarnings);
 
-    if strcmp(type, 'int')
-        i = 5;
-    end
-
     meta(1).(field) = parseFieldValue(value, type, p.Results.SuppressWarnings);
-
-%     meta(1).(field) = parseFieldValue(field, value, p.Results.SuppressWarnings);
 end
 
 if ~isempty(fieldMap)
@@ -281,8 +304,6 @@ end
 
 
 function newValue = parseFieldValue(value, type, suppressWarnings)
-% TODO Allow custom field parsing
-
 % Parse a field value based on its given type
 %
 % Type is one of the following strings indicating it's type:
@@ -473,111 +494,6 @@ switch (field)
         end
 end
 end
-
-% function newValue = parseFieldValue(field, value, suppressWarnings)
-% 
-% switch (field)
-%     % Handle 32-bit ints
-%     case {'dimension', 'lineskip', 'byteskip', 'spacedimension'}
-%         newValue = int32(str2double(value));
-% 
-%     % Handle doubles
-%     case {'min', 'max', 'oldmin', 'oldmax'}
-%         newValue = str2double(value);
-% 
-%     % Handle type string
-%     case {'type'}
-%         newValue = getDatatype(value);
-% 
-%     % Handle strings
-%     case {'endian', 'encoding', 'content', 'sampleunits', 'datafile', 'space'}
-%         newValue = lower(value);
-% 
-%     % Handle vectors that should have int datatype
-%     case {'sizes'}
-%         values = strsplit(value, ' ');
-%         newValue = int32(cellfun(@str2double, values));
-% 
-%     % Handle vectors that should have double datatype
-%     case {'spacings', 'thicknesses', 'axismins', 'axismaxs'}
-%         values = strsplit(value, ' ');
-%         newValue = cellfun(@str2double, values);
-% 
-%     % Handle array of strings
-%     case {'kinds', 'labels', 'units', 'spaceunits', 'centerings'}
-%         % Some array of strings have quotations around the words, probably
-%         % because the items can have spaces in the names and then the space
-%         % delimeter idea breaks down.
-%         % If there is a quotation mark anywhere in the string, then it
-%         % assumes there is quotations around each word. Otherwise, use
-%         % space as the delimeter
-%         if any(value == '"')
-%             newValue = lower(strsplit(value, '" "'));
-%             newValue{1}(1) = [];
-%             newValue{end}(end) = [];
-%         else
-%             newValue = lower(strsplit(value, ' '));
-%         end
-% 
-%     % Handle matrices of double datatype
-%     case {'spacedirections', 'spaceorigin'}
-%         values = strsplit(value, ' ');
-% 
-%         noneDim = [];
-% 
-%         for k = 1:length(values)
-%             % If a particular dimension has none, then set the row equal to
-%             % NaN so that it can be distinguished later on
-%             if strcmp(values{k}, 'none')
-%                 noneDim = [noneDim k];
-%                 continue;
-%             end
-% 
-%             % Remove first and last parantheses from string and then split by comma
-%             rowValues = strsplit(values{k}(2:end - 1), ',');
-% 
-%             % Take split values and turn into a vector of doubles, concatenate to
-%             % the matrix
-%             newValue(k, :) = cellfun(@str2double, rowValues);
-%         end
-% 
-%         % Set all dimensions that were none to NaN to indicate these are
-%         % not relevant
-%         newValue(noneDim, :) = NaN;
-% 
-%     % Handle matrices of int datatype
-%     case {'measurementframe'}
-%         values = strsplit(value, ' ');
-% 
-%         noneDim = [];
-% 
-%         for k = 1:length(values)
-%             % If a particular dimension has none, then set the row equal to
-%             % NaN so that it can be distinguished later on
-%             if strcmp(values{k}, 'none')
-%                 noneDim = [noneDim k];
-%                 continue;
-%             end
-% 
-%             % Remove first and last parantheses from string and then split by comma
-%             rowValues = strsplit(values{k}(2:end - 1), ',');
-% 
-%             % Take split values and turn into a vector of doubles, concatenate to
-%             % the matrix
-%             newValue(k, :) = cellfun(@(x) int32(str2double(x)), rowValues);
-%         end
-% 
-%         % Set all dimensions that were none to NaN to indicate these are
-%         % not relevant
-%         newValue(noneDim, :) = NaN;
-% 
-%     otherwise
-%         if ~suppressWarnings
-%             warning(['Unknown field ' field]);
-%         end
-%         newValue = value;
-% end
-% end
 
 
 function data = readData(fidIn, meta)
