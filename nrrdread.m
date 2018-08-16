@@ -77,7 +77,6 @@ function [data, meta] = nrrdread(varargin)
 %   For unsupported fields, a warning will be displayed and the value will
 %   be left as a string.
 %
-%
 %   Special syntaxes: 
 %   
 %   [...] = NRRDREAD(..., 'SupressWarnings', true/false) suppresses any
@@ -119,12 +118,14 @@ function [data, meta] = nrrdread(varargin)
 %
 %   REMARKS
 %
-%   The NRRD specification states that the data array is stored in memory 
-%   with what is coined as C-order style. However, MATLAB stores arrays in 
-%   Fortran-order style. The key distinction between these two styles is
-%   that the horizontal and vertical (i.e. x and y) dimensions will be 
-%   flipped. The typical solution to this problem is to use PERMUTE to
-%   switch the horizontal and vertical dimensions.
+%   The NRRD specification states that the data array is stored in memory
+%   with what is coined as C-order or row-major order. However, MATLAB
+%   stores arrays in Fortran-order or column-major order. In this function,
+%   no modification is made to the data which results in the x and y
+%   dimensions being flipped from what is normally seen. The key distinction 
+%   between these two orders is that the horizontal and vertical (i.e. x 
+%   and y) dimensions will be flipped. The typical solution to this problem 
+%   is to use PERMUTE to switch the horizontal and vertical dimensions.
 %
 %   In addition, for NRRD files with color information, the color dimension
 %   will be at the front of the array. The normal convention is to have the
@@ -255,6 +256,8 @@ data = adjustEndian(data, meta);
 
 % Reshape the matrix if it has more than 1 dimension
 if meta.dimension > 1
+    % TODO Consider swapping first two dimensions to switch from row-major
+    % to column-major version
     data = reshape(data, meta.sizes);
 end
 

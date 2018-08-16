@@ -98,12 +98,12 @@ function nrrdwrite(varargin)
 %
 %   REMARKS
 %
-%   The NRRD specification states that the data array is stored in memory 
-%   with what is coined as C-order style. However, MATLAB stores arrays in 
-%   Fortran-order style. The key distinction between these two styles is
-%   that the horizontal and vertical (i.e. x and y) dimensions will be 
-%   flipped. The typical solution to this problem is to use PERMUTE to
-%   switch the horizontal and vertical dimensions.
+%   The NRRD specification states that the data array is stored in memory
+%   with what is coined as C-order or row-major order. However, MATLAB
+%   stores arrays in Fortran-order or column-major order. When saving the
+%   NRRD data, one must use PERMUTE to switch the horizontal and vertical
+%   dimensions. When saving, the columns will become the rows and the rows
+%   become the columns.
 %
 %   In addition, for NRRD files with color information, the color dimension
 %   will be at the front of the array. The normal convention is to have the
@@ -166,7 +166,7 @@ if isvector(data)
     meta.sizes = length(data);
 else
     meta.dimension = ndims(data);
-    meta.sizes = fliplr(size(data));
+    meta.sizes = size(data);
 end
 
 % Open file for writing

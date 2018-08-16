@@ -279,8 +279,7 @@ fgetl(fid); fgetl(fid); fgetl(fid); fgetl(fid);
 assert(strcmp(fgetl(fid), 'type: uint16'), 'Invalid type');
 assert(strcmp(fgetl(fid), 'dimension: 2'), 'Invalid dimension');
 assert(strcmp(fgetl(fid), 'space dimension: 2'), 'Invalid space dimension');
-% TODO sizes is wrong I think?
-assert(strcmp(fgetl(fid), 'sizes: 9 3'), 'Invalid sizes ');
+assert(strcmp(fgetl(fid), 'sizes: 3 9'), 'Invalid sizes ');
 assert(strcmp(fgetl(fid), 'space directions: none none'), 'Invalid space directions');
 assert(strcmp(fgetl(fid), 'kinds: domain domain'), 'Invalid domain');
 assert(strcmp(fgetl(fid), 'endian: little'), 'Invalid endian');
@@ -288,19 +287,55 @@ assert(strcmp(fgetl(fid), 'encoding: ascii'), 'Invalid encoding');
 assert(strcmp(fgetl(fid), 'spacings: 1.0458 2'), 'Invalid spacings');
 assert(strcmp(fgetl(fid), 'space units: mm mm'), 'Invalid space units');
 assert(strcmp(fgetl(fid), 'space origin: (100,200)'), 'Invalid space origin');
+fgetl(fid);
+assert(strcmp(fgetl(fid), '1 2 3'), 'Invalid ASCII data');
+assert(strcmp(fgetl(fid), '4 5 6'), 'Invalid ASCII data');
+assert(strcmp(fgetl(fid), '7 8 9'), 'Invalid ASCII data');
+assert(strcmp(fgetl(fid), '10 11 12'), 'Invalid ASCII data');
+assert(strcmp(fgetl(fid), '13 14 15'), 'Invalid ASCII data');
+assert(strcmp(fgetl(fid), '16 17 18'), 'Invalid ASCII data');
+assert(strcmp(fgetl(fid), '19 20 21'), 'Invalid ASCII data');
+assert(strcmp(fgetl(fid), '22 23 24'), 'Invalid ASCII data');
+assert(strcmp(fgetl(fid), '25 26 27'), 'Invalid ASCII data');
+
+
+[data, metadata] = nrrdread('data/test3d_ascii.nrrd');
+nrrdwrite(filename, data, metadata);
+
+% Open file
+fclose(fid);
+[fid, msg] = fopen(filename, 'r');
+assert(fid > 3, ['Could not open file: ' msg]);
+
+fgetl(fid); fgetl(fid); fgetl(fid); fgetl(fid);
+assert(strcmp(fgetl(fid), 'type: uint32'), 'Invalid type');
+assert(strcmp(fgetl(fid), 'dimension: 3'), 'Invalid dimension');
+assert(strcmp(fgetl(fid), 'space: left-posterior-superior'), 'Invalid space');
+assert(strcmp(fgetl(fid), 'sizes: 3 3 3'), 'Invalid sizes ');
+assert(strcmp(fgetl(fid), 'space directions: (1,0,0) (0,1,0) (0,0,1)'), 'Invalid space directions');
+assert(strcmp(fgetl(fid), 'kinds: domain domain domain'), 'Invalid domain');
+assert(strcmp(fgetl(fid), 'endian: little'), 'Invalid endian');
+assert(strcmp(fgetl(fid), 'encoding: ascii'), 'Invalid encoding');
+assert(strcmp(fgetl(fid), 'space units: mm mm mm'), 'Invalid space units');
+assert(strcmp(fgetl(fid), 'space origin: (100.1,200.3,-500)'), 'Invalid space origin');
+fgetl(fid);
+
+for i = 1:27
+    assert(strcmp(fgetl(fid), num2str(i)), 'Invalid ASCII data');
+end
 
 fclose(fid);
+
+
+% [data, metadata] = nrrdread('data/test3d_ascii.nrrd');
 % 
-% [data, metadata] = nrrdread('data/test2d_ascii.nrrd');
-% 
-% assert(all(all(data == reshape(1:27, [3 9]))), 'Invalid data matrix for test2d');
-% assert(metadata.dimension == 2, 'Dimension is not 2 for test2d');
-% assert(strcmp(metadata.type, 'uint16'), 'Type is not uint16 for test2d');
-% assert(all(metadata.sizes == [3 9]), 'Sizes not right for test2d');
-% assert(strcmp(metadata.encoding, 'ascii'), 'Not ASCII encoding for test2d');
-% assert(metadata.spacedimension == 2, 'Space dimension is not 2 for test2d');
-% assert(all(metadata.spacings == [1.0458 2]), 'Spacing not correct for test2d');
-% assert(all(isnan(metadata.spacedirections)), 'Space directions not correct for test2d');
-% assert(all(strcmp(metadata.kinds, 'domain')), 'Kinds not correct for test2d');
-% assert(all(strcmp(metadata.spaceunits, 'mm')), 'Space units not correct for test2d');
-% assert(all(metadata.spaceorigin == [100 200]), 'Space origin not correct for test2d');
+% assert(all(all(all(data == reshape(1:27, [3 3 3])))), 'Invalid data matrix for test3d');
+% assert(metadata.dimension == 3, 'Dimension is not 3 for test3d');
+% assert(strcmp(metadata.type, 'uint32'), 'Type is not uint32 for test3d');
+% assert(all(metadata.sizes == [3 3 3]), 'Sizes not right for test3d');
+% assert(strcmp(metadata.encoding, 'ascii'), 'Not ASCII encoding for test3d');
+% assert(strcmp(metadata.space, 'left-posterior-superior'), 'Space not right for test3d');
+% assert(all(all(metadata.spacedirections == [1 0 0; 0 1 0; 0 0 1])), 'Space directions not correct for test3d');
+% assert(all(strcmp(metadata.kinds, 'domain')), 'Kinds not correct for test3d');
+% assert(all(strcmp(metadata.spaceunits, 'mm')), 'Space units not correct for test3d');
+% assert(all(metadata.spaceorigin == [100.1 200.3 -500]), 'Space origin not correct for test3d');

@@ -1,2 +1,3 @@
 # Ignore MATLAB autosave files
 *.asv
+data/test.nrrd
